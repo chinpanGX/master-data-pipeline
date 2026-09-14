@@ -1,0 +1,51 @@
+# マスターデータ連携パイプライン 共通設定
+
+# download_sheets.py が使う。対象スプレッドシートの各タブ名は、schema/tables/*.yaml の
+# input_csv の値と一致させること(例: input_csv: character_master ならタブ名も
+# "character_master")。credentials_path はサービスアカウント鍵JSONへのパス。
+# 手動でCSVをcsv/に配置する運用ならこのセクションは使わない(download_sheets.pyを
+# 実行しなければよい)。
+google_sheets:
+  spreadsheet_id: "REPLACE_ME_WITH_YOUR_SPREADSHEET_ID"
+  credentials_path: "./credentials/service_account.json"
+
+preprocessing:
+  csv_dir: "./csv"
+  normalized_csv_dir: "./out/normalized_csv"
+
+csharp_codegen:
+  tables_dir: "./schema/tables"
+  enums_dir: "./schema/enums"
+  output_dir: "./out/generated_csharp"
+  # copy_destinations と同様、特定プロジェクトに依存しない値にしてある。
+  # 導入するプロジェクトのDomain.MasterData配置に合わせて書き換えること。
+  namespace: "YourGame.Domain.MasterData"
+
+csharp_converter:
+  tables_dir: "./schema/tables"
+  csv_dir: "./out/normalized_csv"
+  generated_csharp_dir: "./out/generated_csharp"
+  output_path: "./out/masterdata.bytes"
+
+server_codegen:
+  tables_dir: "./schema/tables"
+  enums_dir: "./schema/enums"
+  csv_dir: "./out/normalized_csv"
+  output_rust_dir: "./out/generated_rust"
+  output_json_dir: "./out/server"
+
+# このリポジトリは特定プロジェクト専用ではなく、汎用ツールとして開発している
+# (利用時は対象プロジェクト側に配置してから config.yaml を書き換える想定)。
+# そのため copy_destinations は「shared/master-data-pipeline/ が root/ の2階層下」という
+# 標準レイアウト例(タスクリスト参照)に基づくプレースホルダであり、このリポジトリを
+# 開発している場所には実在しない。実際に導入するプロジェクトの配置に合わせて
+# このセクションを書き換えること。
+copy_destinations:
+  models_dest_dir: "../../client/Assets/Scripts/Domain.MasterData/Models"
+  enums_dest_dir: "../../client/Assets/Scripts/Domain.MasterData/Enums"
+  client_loader_dest_dir: "../../client/Assets/Scripts/Domain.MasterData"
+  realtime_loader_dest_dir: "../../realtime_server/Domain.MasterData"
+  client_bytes_dest_dir: "../../client/Assets/StreamingAssets/MasterData"
+  realtime_bytes_dest_dir: "../../realtime_server/MasterData"
+  server_rust_dest_dir: "../../server/src/master/generated"
+  server_json_dest_dir: "../../server/master_data"

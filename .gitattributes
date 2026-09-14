@@ -1,0 +1,12 @@
+﻿* text=auto eol=lf
+
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+# CSVは改行コード自体が意味を持つ(Excel等はCRLFを期待する)ため、
+# gitによる変換対象から外し、バイト列をそのまま保持する。
+*.csv -text

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="csharp-codegen/csharp-codegen.csproj" />
+  <Project Path="csharp_converter/csharp_converter.csproj" />
+</Solution>

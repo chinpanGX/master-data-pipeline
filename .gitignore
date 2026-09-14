@@ -1,0 +1,27 @@
+credentials/*
+!credentials/.gitkeep
+csv/*.csv
+out/
+tests/out/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# vscode
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+
+# .NET
+bin/
+obj/
+
+# Rust
+target/

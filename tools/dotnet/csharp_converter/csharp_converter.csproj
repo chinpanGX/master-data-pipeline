@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <!--
+      MasterMemory の Source Generator は、[MemoryTable] 型の namespace ではなく
+      「このプロジェクトの RootNamespace」上に DatabaseBuilder / MemoryDatabase /
+      MasterMemoryResolver を生成する。この値はMSBuildプロパティ(コンパイル時定数)で
+      あるためconfig.yamlから実行時に読み込むことはできず、config.yamlの
+      csharp_codegen.namespace と手動で一致させておく必要がある
+      (Unity側 Domain.MasterData.asmdef・realtime_server側プロジェクトも同様の制約。Phase 8参照)。
+      このツールを別プロジェクトに導入する際は、config.yamlのnamespaceを変更したら
+      必ずここも合わせて変更すること。
+      ※Program.cs自体はDatabaseBuilder/AesCrypto/POCO/Enumの型名を一切ハードコードせず、
+      すべてconfig.yaml由来のrootNamespace文字列からリフレクションで解決している。
+    -->
+    <RootNamespace>YourGame.Domain.MasterData</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="MasterMemory" Version="3.0.4" />
+    <PackageReference Include="MessagePack" Version="3.1.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SchemaLoader / TableDefinition / ColumnDefinition / NameConversion を直接参照する
+         (pipeline内で完結する参照は直接参照、複製しない)。 -->
+    <ProjectReference Include="../csharp-codegen/csharp-codegen.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- csharp-codegen(Phase 3)が生成した Models/Enums/MasterDataLoader.cs/AesCrypto.cs を
+         直接コンパイル対象にする(MasterDataModels/CsvSourceAttributeは廃止済み)。 -->
+    <Compile Include="../../../out/generated_csharp/**/*.cs" />
+  </ItemGroup>
+
+</Project>
