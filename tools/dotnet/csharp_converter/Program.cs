@@ -32,9 +32,9 @@ try
             "(csharp_converter.csprojのRootNamespaceがconfig.yamlのnamespaceと一致しているか確認してください)");
     var builder = Activator.CreateInstance(builderType)!;
 
-    foreach (var table in tables)
+    foreach (var table in tables.Where(t => t.IsClientTarget))
     {
-        var className = NameConversion.ToPascalCase(table.Name);
+        var className = PocoClassGenerator.GetClassName(table);
         var pocoType = assembly.GetType($"{rootNamespace}.Models.{className}") ??
             throw new InvalidOperationException(
                 $"POCO型が見つかりません: {rootNamespace}.Models.{className}(先にcsharp-codegenを実行してください)");

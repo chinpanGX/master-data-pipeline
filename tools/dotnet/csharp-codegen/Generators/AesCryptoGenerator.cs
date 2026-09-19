@@ -11,7 +11,8 @@ public static class AesCryptoGenerator
     public static string Generate(string rootNamespace)
     {
         return $$"""
-            {{GeneratedFileHeader.Text}}using System.Security.Cryptography;
+            {{GeneratedFileHeader.Text}}using System;
+            using System.Security.Cryptography;
             using System.Text;
 
             namespace {{rootNamespace}}
@@ -21,16 +22,24 @@ public static class AesCryptoGenerator
                     private const int NonceSize = 12;
                     private const int TagSize = 16;
 
+                    // SHA256.HashData / AesGcm(key, tagSize)の2引数コンストラクタは.NET 8+限定のAPIで、
+                    // Unity側(.NET Standard 2.1相当のAPI互換性)では使えないため、
+                    // csharp_converter(.NET側)・Unity側の両方で動く互換APIのみを使う。
                     public static byte[] Encrypt(byte[] plainData, string password)
                     {
-                        var key = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+                        byte[] key;
+                        using (var sha256 = SHA256.Create())
+                        {
+                            key = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                        }
+
                         var nonce = new byte[NonceSize];
                         RandomNumberGenerator.Fill(nonce);
 
                         var cipherText = new byte[plainData.Length];
                         var tag = new byte[TagSize];
 
-                        using var aesGcm = new AesGcm(key, TagSize);
+                        using var aesGcm = new AesGcm(key);
                         aesGcm.Encrypt(nonce, plainData, cipherText, tag);
 
                         var result = new byte[NonceSize + TagSize + cipherText.Length];
@@ -42,7 +51,12 @@ public static class AesCryptoGenerator
 
                     public static byte[] Decrypt(byte[] encryptedData, string password)
                     {
-                        var key = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+                        byte[] key;
+                        using (var sha256 = SHA256.Create())
+                        {
+                            key = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                        }
+
                         var nonce = new byte[NonceSize];
                         var tag = new byte[TagSize];
                         var cipherTextLength = encryptedData.Length - NonceSize - TagSize;
@@ -53,7 +67,7 @@ public static class AesCryptoGenerator
                         Buffer.BlockCopy(encryptedData, NonceSize + TagSize, cipherText, 0, cipherTextLength);
 
                         var plainData = new byte[cipherTextLength];
-                        using var aesGcm = new AesGcm(key, TagSize);
+                        using var aesGcm = new AesGcm(key);
                         aesGcm.Decrypt(nonce, cipherText, tag, plainData);
                         return plainData;
                     }

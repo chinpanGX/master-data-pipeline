@@ -2,6 +2,9 @@ credentials/*
 !credentials/.gitkeep
 csv/*.csv
 out/
+# プロジェクト固有の値(参照先パス等)を持つため追跡しない。
+# 導入プロジェクト側でこのファイルを用意する(config.yaml.example等の追加は将来検討)。
+config.yaml
 tests/out/
 __pycache__/
 *.pyc

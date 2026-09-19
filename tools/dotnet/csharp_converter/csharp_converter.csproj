@@ -15,7 +15,7 @@
       ※Program.cs自体はDatabaseBuilder/AesCrypto/POCO/Enumの型名を一切ハードコードせず、
       すべてconfig.yaml由来のrootNamespace文字列からリフレクションで解決している。
     -->
-    <RootNamespace>YourGame.Domain.MasterData</RootNamespace>
+    <RootNamespace>Atlas.MasterData</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

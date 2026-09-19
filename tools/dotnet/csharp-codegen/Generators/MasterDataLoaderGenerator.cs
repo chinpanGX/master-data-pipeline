@@ -5,11 +5,17 @@ namespace csharp_codegen.Generators;
 /// 埋め込む方式(復号+MemoryDatabase構築ロジックはUnity/MagicOnionで完全に共通のため、
 /// テーブルごとの構造に依存しない)。
 ///
-/// MasterMemory 3.x は Source Generator方式で、コンパイル対象プロジェクトの
-/// RootNamespace 上に MemoryDatabase / DatabaseBuilder / MasterMemoryResolver を
-/// 生成する(本ツールの生成物ではない)。そのため、このファイルをコピーする
-/// client / realtime_server 側のプロジェクトは、RootNamespace を config.yaml の
-/// csharp_codegen.namespace(= rootNamespace引数)と一致させる必要がある(Phase 8で設定)。
+/// MasterMemory 3.x / MessagePack 3.x は Source Generator方式で、コンパイル対象
+/// アセンブリ内に MemoryDatabase / DatabaseBuilder / MasterMemoryResolver を生成する
+/// (本ツールの生成物ではない)。これらは同一アセンブリ内でのみアクセス可能なため、
+/// [MemoryTable]/[MessagePackObject]のPOCOモデルとMasterDataLoaderは必ず同じアセンブリ
+/// (同じrootNamespace)に配置する(MasterMemory公式READMEのco-location方針。
+/// Domain/Infrastructureのようなレイヤー分割で別アセンブリに分けることはできない)。
+///
+/// MessagePack側のSource Generator出力(internal公開の GeneratedMessagePackResolver)は
+/// 直接参照しない。MessagePack公式ドキュメントの通り、StandardResolverが内部で
+/// SourceGeneratedFormatterResolver経由でSource Generator出力を自動的に含むため、
+/// StandardResolver.Instanceを合成するだけでよい。
 ///
 /// 復号には同じ出力ディレクトリに生成される AesCrypto.cs(<see cref="AesCryptoGenerator"/>)を
 /// そのまま使う。csharp_converter(Phase 4)側の暗号化と実装を共有するための、
@@ -42,12 +48,12 @@ public static class MasterDataLoaderGenerator
 
                     // MasterMemoryResolver / MemoryDatabase はこのプロジェクトのビルド時に
                     // MasterMemory.SourceGenerator が生成する(同一名前空間に存在する前提)。
-                    // GeneratedMessagePackResolver は MessagePack.SourceGenerator が
-                    // POCO([MessagePackObject])用に生成するアセンブリ固定名前空間のResolver。
+                    // StandardResolverはMessagePackのSource Generator出力を内部で
+                    // 自動的に含むため、POCO([MessagePackObject])用のResolverを
+                    // 個別に参照する必要はない。
                     private static readonly IFormatterResolver Resolver =
                         CompositeResolver.Create(
                             MasterMemoryResolver.Instance,
-                            MessagePack.GeneratedMessagePackResolver.Instance,
                             StandardResolver.Instance);
 
                     public static MemoryDatabase Load(byte[] encryptedBytes)

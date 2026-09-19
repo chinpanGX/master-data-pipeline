@@ -67,14 +67,14 @@ pub fn table_file_name(table: &TableDefinition) -> &str {
 pub fn generate_enum(enum_def: &EnumDefinition) -> String {
     let mut members = String::new();
     for member in &enum_def.members {
-        members.push_str(&format!("    {} = {},\n", member.name, member.id));
+        members.push_str(&format!("    {} = {},\n", member.key, member.id));
     }
 
     let mut match_arms = String::new();
     for member in &enum_def.members {
         match_arms.push_str(&format!(
             "            {} => Ok({}::{}),\n",
-            member.id, enum_def.enum_name, member.name
+            member.id, enum_def.enum_name, member.key
         ));
     }
 

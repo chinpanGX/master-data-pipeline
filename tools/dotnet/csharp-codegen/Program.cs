@@ -24,9 +24,9 @@ try
         Console.WriteLine($"generated: Enums/{enumDefinition.Enum}.cs");
     }
 
-    foreach (var table in tables)
+    foreach (var table in tables.Where(t => t.IsClientTarget))
     {
-        var className = NameConversion.ToPascalCase(table.Name);
+        var className = PocoClassGenerator.GetClassName(table);
         var source = PocoClassGenerator.Generate(table, config.Namespace);
         File.WriteAllText(Path.Combine(modelsDir, $"{className}.cs"), source);
         Console.WriteLine($"generated: Models/{className}.cs");

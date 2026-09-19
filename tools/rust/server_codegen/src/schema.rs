@@ -1,6 +1,6 @@
 //! config.yaml / schema/tables/*.yaml / schema/enums/*.yaml の中間モデル。
 //!
-//! フォーマットの詳細は schema/tables/character.yaml のコメントを参照。
+//! フォーマットの詳細はREADME.mdの「スキーマの書き方」を参照。
 
 use serde::Deserialize;
 use std::fs;
@@ -65,8 +65,11 @@ pub struct EnumDefinition {
 pub struct EnumMemberDefinition {
     /// 出力される数値。並べ替えても変わらない固定値。
     pub id: i64,
-    /// スプレッドシート上で入力される名前。
+    /// スプレッドシート上で入力される名前(日本語等、表示用)。コード識別子には使わない(keyを使う)。
+    #[allow(dead_code)]
     pub name: String,
+    /// 生成コード上のenumバリアント名(Rustの識別子として妥当な値であること)。
+    pub key: String,
 }
 
 pub fn load_config(repo_root: &Path) -> Result<Config, String> {

@@ -14,15 +14,22 @@ namespace csharp_codegen.Generators;
 /// </summary>
 public static class PocoClassGenerator
 {
+    /// <summary>
+    /// 生成するクラス名(テーブル名のPascalCase + "Data")。MasterMemoryのSource Generatorが
+    /// このクラス名を元に "{ClassName}Table" というテーブルアクセサを自動生成するため、
+    /// 結果的に "○○DataTable" という命名になる。
+    /// </summary>
+    public static string GetClassName(TableDefinition table) => NameConversion.ToPascalCase(table.Name) + "Data";
+
     public static string Generate(TableDefinition table, string rootNamespace)
     {
-        var className = NameConversion.ToPascalCase(table.Name);
+        var className = GetClassName(table);
         var clientFields = table.Fields.Where(f => f.IsClientTarget).ToArray();
 
         var properties = clientFields.Select(BuildProperty).ToArray();
 
         var classDeclaration = ClassDeclaration(className)
-            .AddModifiers(Token(SyntaxKind.PublicKeyword))
+            .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.PartialKeyword))
             .AddAttributeLists(
                 AttributeList(SingletonSeparatedList(
                     Attribute(ParseName("MemoryTable"))

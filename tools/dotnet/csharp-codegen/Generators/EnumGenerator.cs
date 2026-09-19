@@ -11,7 +11,7 @@ public static class EnumGenerator
     public static string Generate(EnumDefinition enumDefinition, string rootNamespace)
     {
         var members = enumDefinition.Members
-            .Select(member => EnumMemberDeclaration(member.Name)
+            .Select(member => EnumMemberDeclaration(member.Key)
                 .WithEqualsValue(EqualsValueClause(
                     LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(member.Id)))))
             .ToArray();

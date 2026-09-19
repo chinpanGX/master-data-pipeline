@@ -47,7 +47,7 @@ public static class ContentHashCalculator
             sb.Append("enum:").Append(enumDefinition.Enum).Append(';');
             foreach (var member in enumDefinition.Members.OrderBy(m => m.Id))
             {
-                sb.Append(member.Id).Append('=').Append(member.Name).Append(';');
+                sb.Append(member.Id).Append('=').Append(member.Key).Append(';');
             }
         }
 
