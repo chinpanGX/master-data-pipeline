@@ -64,6 +64,20 @@ def load_yaml_dir(path: Path | str) -> list[dict[str, Any]]:
     return result
 
 
+def resolve_dest_dir(dest: dict[str, Any], key: str) -> Path | None:
+    """copy_destinations[key] を解決する。
+
+    値が空文字(未設定)ならNoneを返す。呼び出し側はこれを「まだ配置先が
+    存在しないので、このコピーはスキップする」の合図として使うこと
+    (空文字を REPO_ROOT に解決してしまうとリポジトリ直下を巻き込んだ
+    クリーンアップ・コピーが走ってしまうため、ここで弾く)。
+    """
+    value = dest[key]
+    if not value:
+        return None
+    return (REPO_ROOT / value).resolve()
+
+
 def copy_dir_contents(src_dir: Path | str, dest_dir: Path | str, pattern: str = "*") -> list[Path]:
     """dest_dirをクリーンアップしてから、src_dir内でpatternに一致するファイルをコピーする。
 

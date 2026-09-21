@@ -7,19 +7,23 @@ from __future__ import annotations
 
 import sys
 
-from common import REPO_ROOT, copy_dir_contents, load_config
+from common import REPO_ROOT, copy_dir_contents, load_config, resolve_dest_dir
 
 
 def main() -> None:
     config = load_config()
     bytes_path = REPO_ROOT / config["csharp_converter"]["output_path"]
 
+    dest_dir = resolve_dest_dir(config["copy_destinations"], "client_bytes_dest_dir")
+    if dest_dir is None:
+        print("skip: client_bytes_dest_dir が未設定のためコピーをスキップしました")
+        return
+
     if not bytes_path.exists():
         raise FileNotFoundError(
             f"{bytes_path} が見つかりません(先にcsharp_converterを実行してください)"
         )
 
-    dest_dir = (REPO_ROOT / config["copy_destinations"]["client_bytes_dest_dir"]).resolve()
     copied = copy_dir_contents(bytes_path.parent, dest_dir, bytes_path.name)
     print(f"copied: {bytes_path} -> {copied[0]}")
 

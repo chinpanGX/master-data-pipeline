@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import sys
 
-from common import REPO_ROOT, copy_dir_contents, load_config
+from common import REPO_ROOT, copy_dir_contents, load_config, resolve_dest_dir
 
 
 def main() -> None:
@@ -24,13 +24,19 @@ def main() -> None:
             f"{generated_dir} が見つかりません(先にcsharp-codegenを実行してください)"
         )
 
-    models_dest = (REPO_ROOT / dest["models_dest_dir"]).resolve()
-    copied = copy_dir_contents(models_src, models_dest, "*.cs")
-    print(f"copied {len(copied)} files: {models_src} -> {models_dest}")
+    models_dest = resolve_dest_dir(dest, "models_dest_dir")
+    if models_dest is None:
+        print("skip: models_dest_dir が未設定のためコピーをスキップしました")
+    else:
+        copied = copy_dir_contents(models_src, models_dest, "*.cs")
+        print(f"copied {len(copied)} files: {models_src} -> {models_dest}")
 
-    enums_dest = (REPO_ROOT / dest["enums_dest_dir"]).resolve()
-    copied = copy_dir_contents(enums_src, enums_dest, "*.cs")
-    print(f"copied {len(copied)} files: {enums_src} -> {enums_dest}")
+    enums_dest = resolve_dest_dir(dest, "enums_dest_dir")
+    if enums_dest is None:
+        print("skip: enums_dest_dir が未設定のためコピーをスキップしました")
+    else:
+        copied = copy_dir_contents(enums_src, enums_dest, "*.cs")
+        print(f"copied {len(copied)} files: {enums_src} -> {enums_dest}")
 
 
 if __name__ == "__main__":

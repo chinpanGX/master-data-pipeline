@@ -7,19 +7,23 @@ from __future__ import annotations
 
 import sys
 
-from common import REPO_ROOT, copy_dir_contents, load_config
+from common import REPO_ROOT, copy_dir_contents, load_config, resolve_dest_dir
 
 
 def main() -> None:
     config = load_config()
     src_dir = REPO_ROOT / config["server_codegen"]["output_rust_dir"]
 
+    dest_dir = resolve_dest_dir(config["copy_destinations"], "server_rust_dest_dir")
+    if dest_dir is None:
+        print("skip: server_rust_dest_dir が未設定のためコピーをスキップしました")
+        return
+
     if not src_dir.exists():
         raise FileNotFoundError(
             f"{src_dir} が見つかりません(先にserver_codegenを実行してください)"
         )
 
-    dest_dir = (REPO_ROOT / config["copy_destinations"]["server_rust_dest_dir"]).resolve()
     copied = copy_dir_contents(src_dir, dest_dir, "*.rs")
     print(f"copied {len(copied)} files: {src_dir} -> {dest_dir}")
 

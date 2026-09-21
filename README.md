@@ -29,7 +29,9 @@ Google スプレッドシート(または手動配置したCSV)で入力した�
    配下のコードを変更したときのみ必要)。
 5. `./run.sh normalize-csv && ./run.sh resolve-enums && ./run.sh validate` でデータを検証する。
 6. `./run.sh client`(Unity/MagicOnion向け一式)、`./run.sh server`(Rust API向け一式)、または
-   `./run.sh all`(ダウンロードから配置まで一括)で生成・配置する。
+   `./run.sh all`(ダウンロードから配置まで一括、`realtime` は含まない)で生成・配置する。
+   realtime_server向けは、構築後に `config.yaml` の `realtime_*_dest_dir` を設定してから
+   `./run.sh realtime` を実行する。
 
 サブコマンド一覧は `./run.sh` / `./build.sh` を引数無しで実行すると表示されます。
 
@@ -58,7 +60,8 @@ master-data-pipeline/
       resolve_enum_ids.py
       validate_common.py
       copy_models.py
-      copy_loader.py
+      copy_client_loader.py
+      copy_realtime_loader.py
       copy_client_bytes.py
       copy_realtime_bytes.py
       copy_server_rust.py
@@ -215,15 +218,17 @@ if else fn impl trait mut pub as return const
 
 ## 既知の制約・注意点
 
-- **`copy_destinations` はプレースホルダから始まる**: `config.yaml` の初期値は
-  `../../client/...` のような汎用プレースホルダで、実在するパスではありません。書き換えずに
-  `copy-*` 系コマンド(`copy-models` / `copy-loader` / `copy-client-bytes` / `copy-server-rust` /
-  `copy-server-json` / `copy-realtime-bytes`)を実行すると、リポジトリの祖先ディレクトリに
-  意図しないファイル・ディレクトリが生成されます。導入時は必ず実プロジェクトのパスに書き換えてください。
-- **`copy-loader` はclient/realtime_serverへ同時書き込みする**: `MasterDataLoader.cs` /
-  `AesCrypto.cs` は `client_loader_dest_dir` と `realtime_loader_dest_dir` の両方へ1回のコマンドで
-  コピーされる実装で、片方だけコピーするオプションはありません。realtime_serverプロジェクトが
-  まだ存在しない場合、このコマンドは使えません。
+- **`copy_destinations` の値を空文字にするとそのコピーはスキップされる**: 配置先プロジェクトが
+  まだ存在しない場合(例: realtime_server未構築)は、該当する `*_dest_dir` を `""` にしておく。
+  `tools/python/common.py` の `resolve_dest_dir` が空文字を検知してコピーをスキップするため、
+  存在しない祖先ディレクトリにファイルが誤生成されることはない。実プロジェクトが用意できたら
+  実パスに書き換えて、対応する `copy-*` コマンドを実行する。
+- **client向け・realtime_server向けのコピーは別コマンド**: `copy-models` / `copy-client-loader` /
+  `copy-client-bytes` はclientのみ、`copy-realtime-loader` / `copy-realtime-bytes` は
+  realtime_serverのみを対象とする(`MasterDataLoader.cs` / `AesCrypto.cs` も
+  `copy_client_loader.py` / `copy_realtime_loader.py` に分かれている)。`run.sh client` は
+  client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け2コマンドのみをまとめて実行する
+  (`run.sh all` は `realtime` を含まない。realtime_server構築後に個別実行すること)。
 - **nullable型が無い**: int/string/bool/enumの4種類のみで、NULLを表現する型がありません。
   enum列で「値が無い」を表したい場合は `NONE` のようなセンチネルメンバー(id: 0)を定義する、
   int列の場合は意味のある既定値(例: 対象外を示す `0`)を割り当てる、といった運用で回避します。
@@ -238,8 +243,8 @@ if else fn impl trait mut pub as return const
   各ツールが直接読む、など)。中間モデル(`MasterDataModels` / `CsvSourceAttribute` 相当のもの)は
   作りません。
 - **pipelineの外(`client` / `server` / `realtime_server`)への受け渡しは、必ず明示的なコピー
-  スクリプトを介する**(`copy_models.py` / `copy_loader.py` / `copy_client_bytes.py` /
-  `copy_realtime_bytes.py` / `copy_server_rust.py` / `copy_server_json.py`)。
+  スクリプトを介する**(`copy_models.py` / `copy_client_loader.py` / `copy_realtime_loader.py` /
+  `copy_client_bytes.py` / `copy_realtime_bytes.py` / `copy_server_rust.py` / `copy_server_json.py`)。
 - 生成とコピーは別スクリプトに分離します(生成/配置の分離)。
 - 各生成・コピースクリプトは、書き込み対象ディレクトリを**処理直前に削除→再作成**してから
   書き込みます(クリーンアップ。`tools/python/common.py` の `clean_dir` を使う)。これにより、

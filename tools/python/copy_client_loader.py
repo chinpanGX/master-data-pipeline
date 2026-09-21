@@ -1,7 +1,6 @@
-"""out/generated_csharp/MasterDataLoader.cs と AesCrypto.cs を client 側・
-realtime_server 側の両方へコピーする(Unity/MagicOnionで完全に共通の生成物。
-AesCryptoはMasterDataLoaderが復号に使う実装で、csharp_converter側の暗号化とも
-同一実装を共有する)。
+"""out/generated_csharp/MasterDataLoader.cs と AesCrypto.cs を client 側へコピーする
+(Unity/MagicOnionで完全に共通の生成物。AesCryptoはMasterDataLoaderが復号に使う実装で、
+csharp_converter側の暗号化とも同一実装を共有する)。
 
 コピー先ディレクトリ(Domain.MasterData/)には Models/ Enums/ など他のファイルも
 同居するため、ディレクトリ全体はクリーンアップせず、このファイルたちだけを上書きする。
@@ -11,7 +10,7 @@ from __future__ import annotations
 
 import sys
 
-from common import REPO_ROOT, copy_file, load_config
+from common import REPO_ROOT, copy_file, load_config, resolve_dest_dir
 
 LOADER_FILES = ("MasterDataLoader.cs", "AesCrypto.cs")
 
@@ -21,20 +20,19 @@ def main() -> None:
     generated_dir = REPO_ROOT / config["csharp_codegen"]["output_dir"]
     dest = config["copy_destinations"]
 
-    srcs = []
+    dest_dir = resolve_dest_dir(dest, "client_loader_dest_dir")
+    if dest_dir is None:
+        print("skip: client_loader_dest_dir が未設定のためコピーをスキップしました")
+        return
+
     for filename in LOADER_FILES:
         src = generated_dir / filename
         if not src.exists():
             raise FileNotFoundError(
                 f"{src} が見つかりません(先にcsharp-codegenを実行してください)"
             )
-        srcs.append(src)
-
-    for key in ("client_loader_dest_dir", "realtime_loader_dest_dir"):
-        dest_dir = (REPO_ROOT / dest[key]).resolve()
-        for src in srcs:
-            copied = copy_file(src, dest_dir)
-            print(f"copied: {src} -> {copied}")
+        copied = copy_file(src, dest_dir)
+        print(f"copied: {src} -> {copied}")
 
 
 if __name__ == "__main__":
