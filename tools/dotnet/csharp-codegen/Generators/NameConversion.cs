@@ -24,12 +24,13 @@ public static class NameConversion
         return sb.ToString();
     }
 
-    /// <summary>type: int/string/bool/enum を C# の型名に解決する。</summary>
+    /// <summary>type: int/long/string/bool/enum を C# の型名に解決する。</summary>
     public static string ResolveCSharpType(string type, string? enumType)
     {
         return type switch
         {
             "int" => "int",
+            "long" => "long",
             "string" => "string",
             "bool" => "bool",
             "enum" => enumType ?? throw new InvalidOperationException(

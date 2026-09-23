@@ -18,9 +18,13 @@ fn normalize_bool(raw: &str) -> Result<bool, String> {
 fn field_to_json_value(field: &ColumnDefinition, raw: &str) -> Result<Value, String> {
     match field.type_.as_str() {
         "int" | "enum" => raw
+            .parse::<i32>()
+            .map(Value::from)
+            .map_err(|_| format!("列 '{}' の値 '{raw}' はint(32bit)として解釈できません", field.name)),
+        "long" => raw
             .parse::<i64>()
             .map(Value::from)
-            .map_err(|_| format!("列 '{}' の値 '{raw}' はintとして解釈できません", field.name)),
+            .map_err(|_| format!("列 '{}' の値 '{raw}' はlong(64bit)として解釈できません", field.name)),
         "bool" => normalize_bool(raw)
             .map(Value::from)
             .map_err(|e| format!("列 '{}': {e}", field.name)),

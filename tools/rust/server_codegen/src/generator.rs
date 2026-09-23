@@ -41,10 +41,11 @@ pub fn to_snake_case(pascal_case: &str) -> String {
     result
 }
 
-/// type: int/string/bool/enum を Rust の型名に解決する。
+/// type: int/long/string/bool/enum を Rust の型名に解決する。
 fn resolve_rust_type(field: &ColumnDefinition) -> String {
     match field.type_.as_str() {
-        "int" => "i64".to_string(),
+        "int" => "i32".to_string(),
+        "long" => "i64".to_string(),
         "string" => "String".to_string(),
         "bool" => "bool".to_string(),
         "enum" => field
@@ -91,7 +92,7 @@ impl Serialize for {name} {{
     where
         S: Serializer,
     {{
-        serializer.serialize_i64(*self as i64)
+        serializer.serialize_i32(*self as i32)
     }}
 }}
 
@@ -100,7 +101,7 @@ impl<'de> Deserialize<'de> for {name} {{
     where
         D: Deserializer<'de>,
     {{
-        let value = i64::deserialize(deserializer)?;
+        let value = i32::deserialize(deserializer)?;
         match value {{
 {match_arms}            other => Err(serde::de::Error::custom(format!(
                 \"unknown {name} id: {{other}}\"

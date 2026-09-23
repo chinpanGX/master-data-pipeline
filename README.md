@@ -182,10 +182,12 @@ members:
 
 ### 対応している型
 
-`fields[].type` に指定できるのは次の4種類だけです。nullable型は無いので、値が無いことを
+`fields[].type` に指定できるのは次の5種類だけです。nullable型は無いので、値が無いことを
 表現したい場合はセンチネル値で代替します(詳細は [既知の制約・注意点](#既知の制約注意点) を参照)。
 
-- `int`
+- `int`(32bit。C#の`int`、Rustの`i32`、DBの`INT`に対応)
+- `long`(64bit。C#の`long`、Rustの`i64`、DBの`BIGINT`に対応。intの範囲(約21億)を超える値を
+  扱う場合にのみ使う)
 - `string`
 - `bool`(入力値は `TRUE` / `FALSE` / `True` / `False` / `1` / `0` を許容。Google Sheetsの
   チェックボックスは `TRUE` / `FALSE` を出力する)
@@ -229,9 +231,9 @@ if else fn impl trait mut pub as return const
   `copy_client_loader.py` / `copy_realtime_loader.py` に分かれている)。`run.sh client` は
   client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け2コマンドのみをまとめて実行する
   (`run.sh all` は `realtime` を含まない。realtime_server構築後に個別実行すること)。
-- **nullable型が無い**: int/string/bool/enumの4種類のみで、NULLを表現する型がありません。
+- **nullable型が無い**: int/long/string/bool/enumの5種類のみで、NULLを表現する型がありません。
   enum列で「値が無い」を表したい場合は `NONE` のようなセンチネルメンバー(id: 0)を定義する、
-  int列の場合は意味のある既定値(例: 対象外を示す `0`)を割り当てる、といった運用で回避します。
+  int/long列の場合は意味のある既定値(例: 対象外を示す `0`)を割り当てる、といった運用で回避します。
 - **複合主キー・複合UNIQUEが無い**: `fields[].primary_key` も `validate.unique` も単一カラムしか
   対応していません。多対多の中間テーブルなど本来複合キーが欲しいケースでは、行ごとの代理キー
   (例: `unique_id`)を1列追加して単一PKにしてください。

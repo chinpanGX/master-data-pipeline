@@ -124,6 +124,7 @@ static object ConvertValue(string raw, ColumnDefinition field, string rootNamesp
     return field.Type switch
     {
         "int" => int.Parse(raw, CultureInfo.InvariantCulture),
+        "long" => long.Parse(raw, CultureInfo.InvariantCulture),
         "string" => raw,
         "bool" => ParseBool(raw),
         "enum" => ParseEnum(raw, field.EnumType!, rootNamespace, assembly),
