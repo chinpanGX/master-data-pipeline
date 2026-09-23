@@ -26,9 +26,10 @@ Usage: ./run.sh <command>
   client                    上記5コマンドをまとめて実行(clientのみ配置)
 
 リアルタイムサーバー向け:
+  copy-realtime-models       out/generated_csharp/{Models,Enums} -> realtime_server
   copy-realtime-loader        out/generated_csharp/MasterDataLoader.cs -> realtime_server
   copy-realtime-bytes        out/masterdata.bytes -> realtime_server
-  realtime                  上記2コマンドをまとめて実行(realtime_serverのみ配置。
+  realtime                  上記3コマンドをまとめて実行(realtime_serverのみ配置。
                             事前に client か generate-csharp+build-client の実行が必要)
 
 サーバー(Rust API、既存)向け:
@@ -74,6 +75,7 @@ cmd_build_client() {
 }
 
 cmd_copy_models()          { run_py copy_models.py; }
+cmd_copy_realtime_models() { run_py copy_realtime_models.py; }
 cmd_copy_client_loader()     { run_py copy_client_loader.py; }
 cmd_copy_realtime_loader()   { run_py copy_realtime_loader.py; }
 cmd_copy_client_bytes()     { run_py copy_client_bytes.py; }
@@ -88,6 +90,7 @@ cmd_client() {
 }
 
 cmd_realtime() {
+    cmd_copy_realtime_models
     cmd_copy_realtime_loader
     cmd_copy_realtime_bytes
 }
@@ -122,6 +125,7 @@ case "${1:-}" in
     generate-csharp) cmd_generate_csharp ;;
     build-client) cmd_build_client ;;
     copy-models) cmd_copy_models ;;
+    copy-realtime-models) cmd_copy_realtime_models ;;
     copy-client-loader) cmd_copy_client_loader ;;
     copy-realtime-loader) cmd_copy_realtime_loader ;;
     copy-client-bytes) cmd_copy_client_bytes ;;

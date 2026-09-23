@@ -60,6 +60,7 @@ master-data-pipeline/
       resolve_enum_ids.py
       validate_common.py
       copy_models.py
+      copy_realtime_models.py
       copy_client_loader.py
       copy_realtime_loader.py
       copy_client_bytes.py
@@ -226,10 +227,11 @@ if else fn impl trait mut pub as return const
   存在しない祖先ディレクトリにファイルが誤生成されることはない。実プロジェクトが用意できたら
   実パスに書き換えて、対応する `copy-*` コマンドを実行する。
 - **client向け・realtime_server向けのコピーは別コマンド**: `copy-models` / `copy-client-loader` /
-  `copy-client-bytes` はclientのみ、`copy-realtime-loader` / `copy-realtime-bytes` は
-  realtime_serverのみを対象とする(`MasterDataLoader.cs` / `AesCrypto.cs` も
+  `copy-client-bytes` はclientのみ、`copy-realtime-models` / `copy-realtime-loader` /
+  `copy-realtime-bytes` はrealtime_serverのみを対象とする(Models/Enumsも `copy_models.py` /
+  `copy_realtime_models.py` に、`MasterDataLoader.cs` / `AesCrypto.cs` も
   `copy_client_loader.py` / `copy_realtime_loader.py` に分かれている)。`run.sh client` は
-  client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け2コマンドのみをまとめて実行する
+  client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け3コマンドのみをまとめて実行する
   (`run.sh all` は `realtime` を含まない。realtime_server構築後に個別実行すること)。
 - **nullable型が無い**: int/long/string/bool/enumの5種類のみで、NULLを表現する型がありません。
   enum列で「値が無い」を表したい場合は `NONE` のようなセンチネルメンバー(id: 0)を定義する、
@@ -245,7 +247,8 @@ if else fn impl trait mut pub as return const
   各ツールが直接読む、など)。中間モデル(`MasterDataModels` / `CsvSourceAttribute` 相当のもの)は
   作りません。
 - **pipelineの外(`client` / `server` / `realtime_server`)への受け渡しは、必ず明示的なコピー
-  スクリプトを介する**(`copy_models.py` / `copy_client_loader.py` / `copy_realtime_loader.py` /
+  スクリプトを介する**(`copy_models.py` / `copy_realtime_models.py` / `copy_client_loader.py` /
+  `copy_realtime_loader.py` /
   `copy_client_bytes.py` / `copy_realtime_bytes.py` / `copy_server_rust.py` / `copy_server_json.py`)。
 - 生成とコピーは別スクリプトに分離します(生成/配置の分離)。
 - 各生成・コピースクリプトは、書き込み対象ディレクトリを**処理直前に削除→再作成**してから
