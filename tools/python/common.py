@@ -89,13 +89,13 @@ def copy_dir_contents(
     dest_dirがそのスクリプトの生成物専用ディレクトリである場合に使う
     (他の生成物・手書きファイルと同居するディレクトリには copy_file を使うこと)。
 
-    preserve_meta=True にすると、Unityの `.meta` サイドカーファイルのうち
-    対応する実体ファイルが今回も引き続きコピーされるものは削除しない
-    (rmtreeで一律削除すると、その実体ファイルのGUIDが次のUnityインポート時に
+    preserve_meta=True にすると、今回も引き続き生成される実体ファイルとその
+    Unity `.meta` サイドカーファイルは削除せず、`shutil.copy2`でその場に上書きする
+    (削除してから作り直すと、実体ファイルのGUIDが次のUnityインポート時に
     再採番され、Addressables等からのGUID参照が切れてしまうため)。
-    実体ファイルが無くなった(テーブル削除・リネーム等の)孤児`.meta`は
-    通常どおり削除する。dest_dir配下がUnityプロジェクト内にある
-    コピー先(masterdata.bytes、Models/Enumsの*.cs)でのみ使うこと。
+    今回生成されなくなった(テーブル削除・リネーム等の)ファイルとその`.meta`だけ
+    削除する。dest_dir配下がUnityプロジェクト内にあるコピー先
+    (masterdata.bytes、Models/Enumsの*.cs)でのみ使うこと。
     """
     src_dir = Path(src_dir)
     dest_dir = Path(dest_dir)
@@ -104,8 +104,9 @@ def copy_dir_contents(
         src_names = {src.name for src in Path(src_dir).glob(pattern)}
         if dest_dir.exists():
             for existing in dest_dir.iterdir():
-                if existing.name.endswith(".meta") and existing.name[: -len(".meta")] in src_names:
-                    continue  # 対応する実体ファイルが今回もコピーされるのでGUIDを維持する
+                base_name = existing.name[: -len(".meta")] if existing.name.endswith(".meta") else existing.name
+                if base_name in src_names:
+                    continue  # 今回も生成されるファイル(及びその.meta)はcopy2の上書きに任せる
                 if existing.is_dir():
                     shutil.rmtree(existing)
                 else:
