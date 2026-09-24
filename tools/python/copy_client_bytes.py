@@ -24,7 +24,7 @@ def main() -> None:
             f"{bytes_path} が見つかりません(先にcsharp_converterを実行してください)"
         )
 
-    copied = copy_dir_contents(bytes_path.parent, dest_dir, bytes_path.name)
+    copied = copy_dir_contents(bytes_path.parent, dest_dir, bytes_path.name, preserve_meta=True)
     print(f"copied: {bytes_path} -> {copied[0]}")
 
 

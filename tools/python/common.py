@@ -78,14 +78,43 @@ def resolve_dest_dir(dest: dict[str, Any], key: str) -> Path | None:
     return (REPO_ROOT / value).resolve()
 
 
-def copy_dir_contents(src_dir: Path | str, dest_dir: Path | str, pattern: str = "*") -> list[Path]:
+def copy_dir_contents(
+    src_dir: Path | str,
+    dest_dir: Path | str,
+    pattern: str = "*",
+    preserve_meta: bool = False,
+) -> list[Path]:
     """dest_dirをクリーンアップしてから、src_dir内でpatternに一致するファイルをコピーする。
 
     dest_dirがそのスクリプトの生成物専用ディレクトリである場合に使う
     (他の生成物・手書きファイルと同居するディレクトリには copy_file を使うこと)。
+
+    preserve_meta=True にすると、Unityの `.meta` サイドカーファイルのうち
+    対応する実体ファイルが今回も引き続きコピーされるものは削除しない
+    (rmtreeで一律削除すると、その実体ファイルのGUIDが次のUnityインポート時に
+    再採番され、Addressables等からのGUID参照が切れてしまうため)。
+    実体ファイルが無くなった(テーブル削除・リネーム等の)孤児`.meta`は
+    通常どおり削除する。dest_dir配下がUnityプロジェクト内にある
+    コピー先(masterdata.bytes、Models/Enumsの*.cs)でのみ使うこと。
     """
     src_dir = Path(src_dir)
-    dest_dir = clean_dir(dest_dir)
+    dest_dir = Path(dest_dir)
+
+    if preserve_meta:
+        src_names = {src.name for src in Path(src_dir).glob(pattern)}
+        if dest_dir.exists():
+            for existing in dest_dir.iterdir():
+                if existing.name.endswith(".meta") and existing.name[: -len(".meta")] in src_names:
+                    continue  # 対応する実体ファイルが今回もコピーされるのでGUIDを維持する
+                if existing.is_dir():
+                    shutil.rmtree(existing)
+                else:
+                    existing.unlink()
+        else:
+            dest_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        dest_dir = clean_dir(dest_dir)
+
     copied = []
     for src in sorted(src_dir.glob(pattern)):
         dest = dest_dir / src.name

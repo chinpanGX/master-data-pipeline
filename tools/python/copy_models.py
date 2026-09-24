@@ -28,14 +28,14 @@ def main() -> None:
     if models_dest is None:
         print("skip: models_dest_dir が未設定のためコピーをスキップしました")
     else:
-        copied = copy_dir_contents(models_src, models_dest, "*.cs")
+        copied = copy_dir_contents(models_src, models_dest, "*.cs", preserve_meta=True)
         print(f"copied {len(copied)} files: {models_src} -> {models_dest}")
 
     enums_dest = resolve_dest_dir(dest, "enums_dest_dir")
     if enums_dest is None:
         print("skip: enums_dest_dir が未設定のためコピーをスキップしました")
     else:
-        copied = copy_dir_contents(enums_src, enums_dest, "*.cs")
+        copied = copy_dir_contents(enums_src, enums_dest, "*.cs", preserve_meta=True)
         print(f"copied {len(copied)} files: {enums_src} -> {enums_dest}")
 
 
