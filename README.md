@@ -13,27 +13,54 @@ Google スプレッドシート(または手動配置したCSV)で入力した�
 - .NET SDK (net10.0)
 - Rust / Cargo (edition 2024)
 - Python 3.10+ と `pip install -r requirements.txt`(PyYAML, google-api-python-client, google-auth)
+- GNU Make(Windowsは Git Bash 上で使う。例: `choco install make` / `scoop install make`)
+
+コマンドは bash 上で実行します(Windowsでは Git Bash。PowerShell / cmd からは実行しない)。
 
 ## Getting Started
 
 1. `schema/tables/*.yaml` / `schema/enums/*.yaml` でテーブル・Enumを定義する(書き方は
    [スキーマの書き方](#スキーマの書き方) を参照)。
 2. データを用意する。
-   - Google Sheets連携を使う場合: `config.yaml` の `google_sheets` を設定し、`./run.sh download`
+   - Google Sheets連携を使う場合: `config.yaml` の `google_sheets` を設定し、`make download`
      でシートの内容を `csv/*.csv` にダウンロードする。
    - 手動運用の場合: `csv/{input_csv}.csv` に直接CSVを配置する(`google_sheets` セクションは未使用でよい)。
 3. `config.yaml` の `copy_destinations` を、実際に導入するプロジェクトの配置に書き換える。
-   **初期状態はプレースホルダなので、書き換えずに `copy-*` 系コマンドを実行しないこと**
+   **初期状態はプレースホルダなので、書き換えずに `make generate` などの配置を含むコマンドや `copy-*` 系コマンドを実行しないこと**
    (詳細は [既知の制約・注意点](#既知の制約注意点) を参照)。
-4. `./build.sh tools` でツール本体をビルドする(初回、および `tools/dotnet` / `tools/rust`
+4. `make tools` でツール本体をビルドする(初回、および `tools/dotnet` / `tools/rust`
    配下のコードを変更したときのみ必要)。
-5. `./run.sh normalize-csv && ./run.sh resolve-enums && ./run.sh validate` でデータを検証する。
-6. `./run.sh client`(Unity/MagicOnion向け一式)、`./run.sh server`(Rust API向け一式)、または
-   `./run.sh all`(ダウンロードから配置まで一括、`realtime` は含まない)で生成・配置する。
-   realtime_server向けは、構築後に `config.yaml` の `realtime_*_dest_dir` を設定してから
-   `./run.sh realtime` を実行する。
+5. `make check` でデータを検証する(生成物は変えない)。
+6. `make generate` で、手元のCSVから全部の配置先(server / client / realtime_server)を
+   作り直す。スプレッドシートから取り込んでから生成する場合は `make download generate`。
+   まだ用意できていない配置先は、`config.yaml` の該当する `*_dest_dir` を `""` にしておけば
+   スキップされる。
 
-サブコマンド一覧は `./run.sh` / `./build.sh` を引数無しで実行すると表示されます。
+## make コマンド
+
+生成は決まった順に流す必要があります(前処理 → 検証 → 各配置先。`realtime` は `client` の
+生成物をコピーするだけなので `client` の後)。`make` はこの順番どおりに `run.sh` / `build.sh` を
+呼ぶだけの入口で、処理そのものは持ちません。
+
+| コマンド        | 流すもの                                                                 |
+| --------------- | ------------------------------------------------------------------------ |
+| `make check`    | `normalize-csv` → `resolve-enums` → `validate`(生成物は変えない)       |
+| `make server`   | `check` → `server`                                                       |
+| `make client`   | `check` → `client`                                                       |
+| `make realtime` | `check` → `client` → `realtime`                                          |
+| `make generate` | `check` → `server` → `client` → `realtime`。いちばんよく使う流れ         |
+| `make download` | `download`(Google スプレッドシートから `csv/*.csv` に取り込むだけ)      |
+| `make tools`    | `./build.sh tools`(ツール本体を変えたとき)                             |
+| `make help`     | 一覧と説明(引数無しの `make` も同じ)                                   |
+
+- 途中のコマンドが失敗した時点で止まります(検証に失敗したら生成に進まない)。
+- 1回の `make` の中で同じ処理は1度しか流れません(例: `make server client` でも `check` は1回)。
+- 使うpythonコマンドは環境変数 `PYTHON` で指定できます(例: `PYTHON=python3 make generate`)。
+  そのまま `run.sh` へ渡ります。
+- 別のリポジトリから使う場合は `make -C <このリポジトリのパス> generate` のように呼びます。
+
+1ステップずつ流したいときは `./run.sh <command>` を直接使えます。サブコマンド一覧は
+`./run.sh` / `./build.sh` を引数無しで実行すると表示されます。
 
 ## ディレクトリ構成
 
@@ -74,6 +101,7 @@ master-data-pipeline/
     rust/
       server_codegen/          # 既存APIサーバー向け生成(Rust)
   config.yaml
+  Makefile
   run.sh
   build.sh
 ```
@@ -225,14 +253,15 @@ if else fn impl trait mut pub as return const
   まだ存在しない場合(例: realtime_server未構築)は、該当する `*_dest_dir` を `""` にしておく。
   `tools/python/common.py` の `resolve_dest_dir` が空文字を検知してコピーをスキップするため、
   存在しない祖先ディレクトリにファイルが誤生成されることはない。実プロジェクトが用意できたら
-  実パスに書き換えて、対応する `copy-*` コマンドを実行する。
+  実パスに書き換えて、`make generate`(または対応する `make` / `copy-*` コマンド)を実行する。
 - **client向け・realtime_server向けのコピーは別コマンド**: `copy-models` / `copy-client-loader` /
   `copy-client-bytes` はclientのみ、`copy-realtime-models` / `copy-realtime-loader` /
   `copy-realtime-bytes` はrealtime_serverのみを対象とする(Models/Enumsも `copy_models.py` /
   `copy_realtime_models.py` に、`MasterDataLoader.cs` / `AesCrypto.cs` も
   `copy_client_loader.py` / `copy_realtime_loader.py` に分かれている)。`run.sh client` は
-  client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け3コマンドのみをまとめて実行する
-  (`run.sh all` は `realtime` を含まない。realtime_server構築後に個別実行すること)。
+  client向け5コマンドのみ、`run.sh realtime` はrealtime_server向け3コマンドのみを実行する。
+  `run.sh realtime` は `client` の生成物をコピーするだけなので、`make realtime` /
+  `make generate` は必ず `client` の後に流す。
 - **nullable型が無い**: int/long/string/bool/enumの5種類のみで、NULLを表現する型がありません。
   enum列で「値が無い」を表したい場合は `NONE` のようなセンチネルメンバー(id: 0)を定義する、
   int/long列の場合は意味のある既定値(例: 対象外を示す `0`)を割り当てる、といった運用で回避します。
@@ -257,9 +286,13 @@ if else fn impl trait mut pub as return const
 - 生成・コピーされる全ファイルの先頭には `DO NOT EDIT` コメント(`common.py` の
   `AUTO_GENERATED_COMMENT`)を付与します。
 
-## build.sh / run.sh の役割分担
+## Makefile / build.sh / run.sh の役割分担
 
-ビルド(コンパイル)と実行(生成処理)は分離します。
+ビルド(コンパイル)と実行(生成処理)は分離します。`Makefile` はその上に置いた入口で、
+`build.sh` / `run.sh` のコマンドを決まった順に呼ぶだけです。
+
+- `Makefile`: よく使う流れ(`make generate` など)を1コマンドにまとめます。処理の中身は持たず、
+  順序と「失敗したら止める」だけを受け持ちます。
 
 - `build.sh`: `csharp-codegen` / `csharp_converter` / `server_codegen` をビルドします。
   **`tools/dotnet` や `tools/rust` 配下のツール本体のコードを変更したときだけ**実行すればよく、
@@ -268,6 +301,6 @@ if else fn impl trait mut pub as return const
   - `csharp_converter` は `out/generated_csharp/*.cs`(POCO)を `Compile Include` で直接参照し、
     MasterMemoryのSource Generatorがコンパイル時にテーブル/インデックスコードを生成するため、
     `run.sh build-client` 側で毎回 `dotnet run`(`--no-build`無し)を行います。
-- `run.sh`: ダウンロード→前処理→コード生成→変換→配置までの一連の処理を実行します。
+- `run.sh`: ダウンロード・前処理・コード生成・変換・配置の各処理を1つずつ実行します。
   スキーマやスプレッドシートを変更するたびに実行してください。`build.sh` でビルド済みのツールを
   呼び出すだけで、ツール自体のビルドは行いません。

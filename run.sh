@@ -38,16 +38,12 @@ Usage: ./run.sh <command>
   copy-server-json           out/server/*.json -> server
   server                    上記3コマンドをまとめて実行
 
-全体:
-  all                       download から client / server まで一気通貫で実行
-                            (realtime は含まない。realtime_server 構築後に
-                            config.yaml の realtime_*_dest_dir を設定し、
-                            個別に `realtime` を実行すること)
-
 config.yaml の copy_destinations 配下は、値を空文字 "" にするとそのコピーを
 スキップします(配置先がまだ存在しない場合に使う)。
 
 環境変数 PYTHON で使用するpythonコマンドを指定できます(未指定なら "python")。
+
+決まった順にまとめて流す場合は make を使います(`make help` を参照)。
 EOF
 }
 
@@ -108,15 +104,6 @@ cmd_server() {
     cmd_copy_server_json
 }
 
-cmd_all() {
-    cmd_download
-    cmd_normalize_csv
-    cmd_resolve_enums
-    cmd_validate
-    cmd_client
-    cmd_server
-}
-
 case "${1:-}" in
     download) cmd_download ;;
     normalize-csv) cmd_normalize_csv ;;
@@ -136,7 +123,6 @@ case "${1:-}" in
     copy-server-rust) cmd_copy_server_rust ;;
     copy-server-json) cmd_copy_server_json ;;
     server) cmd_server ;;
-    all) cmd_all ;;
     *)
         usage
         exit 1
