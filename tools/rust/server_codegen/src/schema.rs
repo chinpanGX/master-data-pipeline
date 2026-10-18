@@ -24,6 +24,9 @@ pub struct ServerCodegenConfig {
 #[derive(Debug, Deserialize)]
 pub struct TableDefinition {
     pub name: String,
+    /// raw CSVの指定(glob可)。結合はnormalize_csv.pyが行い、server_codegenは
+    /// name.csv を読むため現状未使用。スキーマの必須項目であることを型で示すために残している。
+    #[allow(dead_code)]
     pub input_csv: String,
     pub fields: Vec<ColumnDefinition>,
 }

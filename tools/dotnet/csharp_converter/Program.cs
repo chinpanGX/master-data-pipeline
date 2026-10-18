@@ -86,7 +86,8 @@ static IList LoadRows(
     string rootNamespace,
     Assembly assembly)
 {
-    var csvPath = Path.Combine(csvDir, $"{table.InputCsv}.csv");
+    // input_csv はglob(水平分割)を含みうるため、正規化CSVのファイル名はテーブル名で決まる(normalize_csv.py参照)
+    var csvPath = Path.Combine(csvDir, $"{table.Name}.csv");
     if (!File.Exists(csvPath))
     {
         throw new FileNotFoundException(

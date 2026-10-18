@@ -33,7 +33,7 @@ def resolve_table(
     if not enum_fields:
         return
 
-    path = normalized_dir / f"{table['input_csv']}.csv"
+    path = normalized_dir / f"{table['name']}.csv"
     if not path.exists():
         raise FileNotFoundError(f"正規化CSVが見つかりません: {path}(先にnormalize_csv.pyを実行してください)")
 
@@ -76,7 +76,7 @@ def main() -> None:
     enum_maps = build_enum_maps(enums_dir)
     for table in load_yaml_dir(tables_dir):
         resolve_table(normalized_dir, table, enum_maps)
-        print(f"resolved enums: {table['input_csv']}.csv")
+        print(f"resolved enums: {table['name']}.csv")
 
 
 if __name__ == "__main__":

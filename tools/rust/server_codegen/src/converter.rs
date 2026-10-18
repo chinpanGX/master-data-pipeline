@@ -37,7 +37,8 @@ fn convert_table(table: &TableDefinition, csv_dir: &Path) -> Result<Value, Strin
     let server_fields: Vec<&ColumnDefinition> =
         table.fields.iter().filter(|f| f.is_server_target()).collect();
 
-    let csv_path = csv_dir.join(format!("{}.csv", table.input_csv));
+    // input_csv はglob(水平分割)を含みうるため、正規化CSVのファイル名はテーブル名で決まる(normalize_csv.py参照)
+    let csv_path = csv_dir.join(format!("{}.csv", table.name));
     let mut reader = csv::Reader::from_path(&csv_path)
         .map_err(|e| format!("{}が見つかりません(先にnormalize_csv.py等を実行してください): {e}", csv_path.display()))?;
 

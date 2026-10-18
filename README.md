@@ -25,6 +25,7 @@ Google スプレッドシート(または手動配置したCSV)で入力した�
    - Google Sheets連携を使う場合: `config.yaml` の `google_sheets` を設定し、`make download`
      でシートの内容を `csv/*.csv` にダウンロードする。
    - 手動運用の場合: `csv/{input_csv}.csv` に直接CSVを配置する(`google_sheets` セクションは未使用でよい)。
+     1テーブルを複数ファイルに分けて管理したい場合は [CSVの水平分割](#csvの水平分割input_csv-のglob) を参照。
 3. `config.yaml` の `copy_destinations` を、実際に導入するプロジェクトの配置に書き換える。
    **初期状態はプレースホルダなので、書き換えずに `make generate` などの配置を含むコマンドや `copy-*` 系コマンドを実行しないこと**
    (詳細は [既知の制約・注意点](#既知の制約注意点) を参照)。
@@ -69,7 +70,7 @@ master-data-pipeline/
   credentials/                 # サービスアカウント鍵などの認証情報(gitignore対象)
   csv/                         # ダウンロード/配置された生CSV置き場
   out/
-    normalized_csv/*.csv       # 前処理済みCSV
+    normalized_csv/*.csv       # 前処理済みCSV(ファイル名はテーブル定義の name)
     generated_csharp/
       Models/*.cs
       Enums/*.cs
@@ -114,7 +115,7 @@ master-data-pipeline/
 Google Sheets(1-2行目コメント、3行目型情報、4行目ヘッダー、5行目〜データ)
   ↓ download_sheets.py (手動CSV運用の場合はこのステップを使わない)
 csv/*.csv(生CSV)
-  ↓ normalize_csv.py(先頭3行除去)
+  ↓ normalize_csv.py(先頭3行除去。水平分割されたCSVはここで1つに結合)
   ↓ resolve_enum_ids.py(Enum列 name→id 変換)
   ↓ validate_common.py(unique + check_relation 検証)
 out/normalized_csv/*.csv(整形・検証済み)
@@ -209,6 +210,47 @@ members:
 | 4行目    | ヘッダー行(列名。`schema/tables/*.yaml` の `fields[].name` と一致させる)  |
 | 5行目〜  | データ行                                                                     |
 
+### CSVの水平分割(input_csv のglob)
+
+行数が多いテーブルなどを、同じヘッダーのまま複数のCSV(スプレッドシートのタブ)に分けて
+管理できます。`input_csv` に `*` を含めるとglobとして扱われ、一致したファイルが
+`normalize_csv.py` で1つに結合されます。結合後は分割していないテーブルと区別がないため、
+クライアント/サーバーのローダー側は何も変わりません。
+
+```yaml
+# sample_item.yaml
+name: sample_item
+input_csv: sample_item_master_*   # * は末尾に置く(下記の命名規約)
+```
+
+```text
+csv/
+  sample_item_master_01.csv
+  sample_item_master_02.csv
+  sample_item_master_03.csv
+```
+
+- `*` を含まない場合は従来どおり `csv/{input_csv}.csv` 1ファイルだけを読みます。
+- 結合順はファイル名の昇順で固定です(出力を決定的にするため)。
+- 各ファイルはそれぞれ上記の固定レイアウト(1-3行目コメント・型情報、4行目ヘッダー)を持ち、
+  **4行目のヘッダーは全ファイルで完全一致(列順も含む)している必要があります**。一致しない場合は
+  `normalize-csv` がエラーで止まります。
+- 正規化後のファイル名はglobからではなくテーブル定義の `name` から決まります
+  (`out/normalized_csv/{name}.csv`。分割の有無に関わらず全テーブル共通)。
+- Google Sheets連携では、タブ名にglobが一致したタブをすべて `csv/{タブ名}.csv` に
+  ダウンロードします(タブ名の一致は大文字・小文字を区別します)。
+
+分割ファイルの命名規約:
+
+- **`{分割しない場合のinput_csv}_{連番}` とし、`input_csv` は `{同}_*` のように `*` を末尾に置く**
+  (例: `sample_item_master_01`, `sample_item_master_02` / `input_csv: sample_item_master_*`)。
+  - YAMLでは値の先頭の `*` がエイリアス記号として解釈され、`input_csv: *_item_master` は
+    パースエラーになります。末尾に置けばクォート不要でそのまま書けます。
+  - 末尾に連番を付けることで、他テーブルのファイルにも一致しにくくなります。
+- 連番は **ゼロ埋めで桁数を揃える**(`01`, `02`, … `10`)。結合順は文字列の昇順なので、
+  `1`, `2`, `10` のように桁がばらつくと `10` が `2` より先に結合されます。
+- 1つのファイルが複数テーブルの `input_csv` に一致した場合はエラーになります。
+
 ### 対応している型
 
 `fields[].type` に指定できるのは次の5種類だけです。nullable型は無いので、値が無いことを
@@ -268,6 +310,9 @@ if else fn impl trait mut pub as return const
 - **複合主キー・複合UNIQUEが無い**: `fields[].primary_key` も `validate.unique` も単一カラムしか
   対応していません。多対多の中間テーブルなど本来複合キーが欲しいケースでは、行ごとの代理キー
   (例: `unique_id`)を1列追加して単一PKにしてください。
+- **水平分割したテーブルのエラー行番号は結合後の通し番号**: `resolve-enums` / `validate` などが
+  表示する「N行目」は、分割ファイルを昇順に結合した後の行番号(先頭ファイルの5行目から通し)です。
+  2ファイル目以降の行は、元ファイル上の行番号とは一致しません。
 
 ## 参照・コピーの原則
 

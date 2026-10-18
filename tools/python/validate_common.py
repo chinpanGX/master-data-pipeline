@@ -14,8 +14,8 @@ from pathlib import Path
 from common import REPO_ROOT, load_config, load_yaml_dir
 
 
-def read_table_csv(normalized_dir: Path, input_csv: str) -> list[dict[str, str]]:
-    path = normalized_dir / f"{input_csv}.csv"
+def read_table_csv(normalized_dir: Path, table_name: str) -> list[dict[str, str]]:
+    path = normalized_dir / f"{table_name}.csv"
     if not path.exists():
         raise FileNotFoundError(f"正規化CSVが見つかりません: {path}(先にnormalize_csv.pyを実行してください)")
     with open(path, encoding="utf-8", newline="") as f:
@@ -29,7 +29,7 @@ def validate_unique(table: dict, rows: list[dict[str, str]], errors: list[str]) 
             value = row[column]
             if value in seen:
                 errors.append(
-                    f"{table['input_csv']}.csv: 列 '{column}' の値 '{value}' が"
+                    f"{table['name']}.csv: 列 '{column}' の値 '{value}' が"
                     f" {seen[value]}行目と{sheet_row}行目で重複しています"
                 )
             else:
@@ -40,7 +40,7 @@ def validate_check_relation(
     table: dict,
     rows: list[dict[str, str]],
     tables_by_name: dict[str, dict],
-    rows_by_input_csv: dict[str, list[dict[str, str]]],
+    rows_by_table: dict[str, list[dict[str, str]]],
     errors: list[str],
 ) -> None:
     for relation in table.get("validate", {}).get("check_relation", []):
@@ -48,22 +48,21 @@ def validate_check_relation(
         target_table_name = relation["table"]
         target_field = relation["target_field"]
 
-        target_table = tables_by_name.get(target_table_name)
-        if target_table is None:
+        if target_table_name not in tables_by_name:
             errors.append(
-                f"{table['input_csv']}.csv: check_relation の参照先テーブル"
+                f"{table['name']}.csv: check_relation の参照先テーブル"
                 f" '{target_table_name}' が schema/tables に見つかりません"
             )
             continue
 
-        target_rows = rows_by_input_csv[target_table["input_csv"]]
+        target_rows = rows_by_table[target_table_name]
         target_values = {row[target_field] for row in target_rows}
 
         for sheet_row, row in enumerate(rows, start=5):
             value = row[field]
             if value not in target_values:
                 errors.append(
-                    f"{table['input_csv']}.csv {sheet_row}行目: 列 '{field}' の値 '{value}' は"
+                    f"{table['name']}.csv {sheet_row}行目: 列 '{field}' の値 '{value}' は"
                     f" {target_table_name}.{target_field} に存在しません"
                 )
 
@@ -75,16 +74,16 @@ def main() -> None:
 
     tables = load_yaml_dir(tables_dir)
     tables_by_name = {table["name"]: table for table in tables}
-    rows_by_input_csv = {
-        table["input_csv"]: read_table_csv(normalized_dir, table["input_csv"])
+    rows_by_table = {
+        table["name"]: read_table_csv(normalized_dir, table["name"])
         for table in tables
     }
 
     errors: list[str] = []
     for table in tables:
-        rows = rows_by_input_csv[table["input_csv"]]
+        rows = rows_by_table[table["name"]]
         validate_unique(table, rows, errors)
-        validate_check_relation(table, rows, tables_by_name, rows_by_input_csv, errors)
+        validate_check_relation(table, rows, tables_by_name, rows_by_table, errors)
 
     if errors:
         print("検証エラー:", file=sys.stderr)
